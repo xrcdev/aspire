@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Sockets;
@@ -15,7 +16,7 @@ public class AddRabbitMQTests
     [InlineData(true)]
     public void AddRabbitMQContainerWithDefaultsAddsAnnotationMetadata(bool withManagementPlugin)
     {
-        var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var rabbitmq = appBuilder.AddRabbitMQ("rabbit");
 
@@ -61,7 +62,7 @@ public class AddRabbitMQTests
     [Fact]
     public async Task RabbitMQCreatesConnectionString()
     {
-        var appBuilder = DistributedApplication.CreateBuilder();
+        var appBuilder = DistributedApplicationTestingBuilder.Create();
         appBuilder.Configuration["Parameters:pass"] = "p@ssw0rd1";
 
         var pass = appBuilder.AddParameter("pass");
@@ -94,7 +95,7 @@ public class AddRabbitMQTests
     [InlineData("12345.00.12", "12345.00.12-management")]
     public void WithManagementPluginUpdatesContainerImageTagToEnableManagementPlugin(string? imageTag, string expectedTag)
     {
-        var appBuilder = TestDistributedApplicationBuilder.Create();
+        var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var rabbitmq = appBuilder.AddRabbitMQ("rabbit");
         if (imageTag is not null)
@@ -124,7 +125,7 @@ public class AddRabbitMQTests
     [InlineData("not-supported")]
     public void WithManagementPluginThrowsForUnsupportedContainerImageTag(string imageTag)
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var rabbitmq = appBuilder.AddRabbitMQ("rabbit");
         rabbitmq.WithImageTag(imageTag);
@@ -138,7 +139,7 @@ public class AddRabbitMQTests
     [InlineData("not-supported")]
     public void WithManagementPluginThrowsForUnsupportedContainerImageName(string imageName)
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var rabbitmq = appBuilder.AddRabbitMQ("rabbit");
         rabbitmq.WithImage(imageName);
@@ -152,7 +153,7 @@ public class AddRabbitMQTests
     [InlineData("not.the.default")]
     public void WithManagementPluginThrowsForUnsupportedContainerImageRegistry(string registry)
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var rabbitmq = appBuilder.AddRabbitMQ("rabbit");
         rabbitmq.WithImageRegistry(registry);
@@ -165,7 +166,7 @@ public class AddRabbitMQTests
     [InlineData(true)]
     public async Task VerifyManifest(bool withManagementPlugin)
     {
-        using var builder = TestDistributedApplicationBuilder.Create(DistributedApplicationOperation.Publish);
+        using var builder = DistributedApplicationTestingBuilder.Create((o, _) => o.Args = ["--publisher", "manifest"]);
 
         var rabbit = builder.AddRabbitMQ("rabbit");
         if (withManagementPlugin)
@@ -212,7 +213,7 @@ public class AddRabbitMQTests
     [Fact]
     public async Task VerifyManifestWithParameters()
     {
-        using var builder = TestDistributedApplicationBuilder.Create(DistributedApplicationOperation.Publish);
+        using var builder = DistributedApplicationTestingBuilder.Create((o, _) => o.Args = ["--publisher", "manifest"]);
 
         var userNameParameter = builder.AddParameter("user");
         var passwordParameter = builder.AddParameter("pass");

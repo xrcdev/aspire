@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Aspire.Hosting.Utils;
+using Aspire.Hosting.Testing;
 using Xunit;
 
 namespace Aspire.Hosting.Tests.Azure;
@@ -14,7 +14,7 @@ public class AzureResourceExtensionsTests
     [InlineData(false)]
     public void AzureStorageUseEmulatorCallbackWithWithDataBindMountResultsInBindMountAnnotationWithDefaultPath(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var storage = builder.AddAzureStorage("storage").RunAsEmulator(configureContainer: builder =>
         {
             if (isReadOnly.HasValue)
@@ -40,7 +40,7 @@ public class AzureResourceExtensionsTests
     [InlineData(false)]
     public void AzureStorageUseEmulatorCallbackWithWithDataBindMountResultsInBindMountAnnotation(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var storage = builder.AddAzureStorage("storage").RunAsEmulator(configureContainer: builder =>
         {
             if (isReadOnly.HasValue)
@@ -66,7 +66,7 @@ public class AzureResourceExtensionsTests
     [InlineData(false)]
     public void AzureStorageUseEmulatorCallbackWithWithDataVolumeResultsInVolumeAnnotationWithDefaultName(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var storage = builder.AddAzureStorage("storage").RunAsEmulator(configureContainer: builder =>
         {
             if (isReadOnly.HasValue)
@@ -92,7 +92,7 @@ public class AzureResourceExtensionsTests
     [InlineData(false)]
     public void AzureStorageUseEmulatorCallbackWithWithDataVolumeResultsInVolumeAnnotation(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var storage = builder.AddAzureStorage("storage").RunAsEmulator(configureContainer: builder =>
         {
             if (isReadOnly.HasValue)
@@ -115,7 +115,7 @@ public class AzureResourceExtensionsTests
     [Fact]
     public void AzureStorageUserEmulatorUseBlobQueueTablePortMethodsMutateEndpoints()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var storage = builder.AddAzureStorage("storage").RunAsEmulator(configureContainer: builder =>
         {
             builder.UseBlobPort(9001);
@@ -136,7 +136,7 @@ public class AzureResourceExtensionsTests
     [InlineData(9007)]
     public void AddAzureCosmosDBWithEmulatorGetsExpectedPort(int? port = null)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var cosmos = builder.AddAzureCosmosDB("cosmos");
 
@@ -157,7 +157,7 @@ public class AzureResourceExtensionsTests
     [InlineData("1.0.7")]
     public void AddAzureCosmosDBWithEmulatorGetsExpectedImageTag(string imageTag)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var cosmos = builder.AddAzureCosmosDB("cosmos");
 

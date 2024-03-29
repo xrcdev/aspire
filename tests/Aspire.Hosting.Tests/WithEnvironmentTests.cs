@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
-using Aspire.Hosting.Utils;
 using Xunit;
 
 namespace Aspire.Hosting.Tests;
@@ -12,7 +12,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentReferencingEndpointPopulatesWithBindingUrl()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("project")
                               .WithHttpsEndpoint(port: 1000, targetPort: 2000, "mybinding")
@@ -32,7 +32,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task SimpleEnvironmentWithNameAndValue()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var project = builder.AddProject<ProjectA>("projectA")
             .WithEnvironment("myName", "value");
@@ -45,7 +45,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentCallbackPopulatesValueWhenCalled()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var environmentValue = "value";
         var projectA = builder.AddProject<ProjectA>("projectA").WithEnvironment("myName", () => environmentValue);
@@ -61,7 +61,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentCallbackPopulatesValueWhenParameterResourceProvided()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         builder.Configuration["Parameters:parameter"] = "MY_PARAMETER_VALUE";
 
@@ -78,7 +78,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentCallbackPopulatesWithExpressionPlaceholderWhenPublishingManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var parameter = builder.AddParameter("parameter");
 
@@ -94,7 +94,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentCallbackThrowsWhenParameterValueMissingInDcpMode()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var parameter = builder.AddParameter("parameter");
 
@@ -109,7 +109,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task ComplexEnvironmentCallbackPopulatesValueWhenCalled()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var environmentValue = "value";
         var projectA = builder.AddProject<ProjectA>("projectA")
@@ -129,7 +129,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentVariableExpressions()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var test = builder.AddResource(new TestResource("test", "connectionString"));
 
@@ -167,7 +167,7 @@ public class WithEnvironmentTests
     [Fact]
     public async Task EnvironmentVariableWithDynamicTargetPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var container = builder.AddContainer("container1", "image")
                                .WithHttpEndpoint(name: "primary")
@@ -192,7 +192,7 @@ public class WithEnvironmentTests
     public async Task EnvironmentWithConnectionStringSetsProperEnvironmentVariable()
     {
         // Arrange
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         const string sourceCon = "sourceConnectionString";
 

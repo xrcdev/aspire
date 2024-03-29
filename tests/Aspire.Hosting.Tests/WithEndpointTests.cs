@@ -3,6 +3,7 @@
 
 using Aspire.Hosting.Tests.Utils;
 using Aspire.Hosting.Utils;
+using Aspire.Hosting.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -16,7 +17,7 @@ public class WithEndpointTests
     [Fact]
     public void WithEndpointInvokesCallback()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                               .WithEndpoint(3000, 1000, name: "mybinding")
@@ -35,7 +36,7 @@ public class WithEndpointTests
     {
         var executed = false;
 
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                               .WithEndpoint("mybinding", endpoint =>
@@ -53,7 +54,7 @@ public class WithEndpointTests
     {
         var executed = false;
 
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                               .WithEndpoint("mybinding", endpoint =>
@@ -70,7 +71,7 @@ public class WithEndpointTests
     {
         var executed = false;
 
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta").WithEndpoint("mybinding", endpoint =>
         {
@@ -87,7 +88,7 @@ public class WithEndpointTests
     {
         var ex = Assert.Throws<DistributedApplicationException>(() =>
         {
-            using var builder = TestDistributedApplicationBuilder.Create();
+            using var builder = DistributedApplicationTestingBuilder.Create();
 
             builder.AddProject<ProjectA>("projecta")
                     .WithHttpsEndpoint(3000, 1000, name: "mybinding")
@@ -102,7 +103,7 @@ public class WithEndpointTests
     {
         var ex = Assert.Throws<DistributedApplicationException>(() =>
         {
-            using var builder = TestDistributedApplicationBuilder.Create();
+            using var builder = DistributedApplicationTestingBuilder.Create();
             builder.AddProject<ProjectB>("projectb")
                    .WithHttpsEndpoint(1000, name: "mybinding")
                    .WithHttpsEndpoint(2000, name: "mybinding");
@@ -114,7 +115,7 @@ public class WithEndpointTests
     [Fact]
     public async Task CanAddEndpointsWithContainerPortAndEnv()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         builder.AddExecutable("foo", "foo", ".")
                .WithHttpEndpoint(targetPort: 3001, name: "mybinding", env: "PORT");
@@ -140,7 +141,7 @@ public class WithEndpointTests
     [Fact]
     public void GettingContainerHostNameFailsIfNoContainerHostNameSet()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
             .WithEndpoint("ep", e =>
             {
@@ -158,7 +159,7 @@ public class WithEndpointTests
     [Fact]
     public void WithExternalHttpEndpointsMarkExistingHttpEndpointsAsExternal()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithEndpoint(name: "ep0")
                                .WithHttpEndpoint(name: "ep1")
@@ -179,7 +180,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestWithBothDifferentPortAndTargetPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithEndpoint(name: "ep0", port: 8080, targetPort: 3000);
 
@@ -207,7 +208,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestWithHttpPortWithTargetPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithHttpEndpoint(name: "h1", targetPort: 3001);
 
@@ -234,7 +235,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestWithHttpsAndTargetPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithHttpsEndpoint(name: "h2", targetPort: 3001);
 
@@ -261,7 +262,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestContainerWithHttpEndpointAndNoPortsAllocatesPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithHttpEndpoint(name: "h3");
 
@@ -288,7 +289,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestContainerWithHttpsEndpointAllocatesPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithHttpsEndpoint(name: "h4");
 
@@ -315,7 +316,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestWithHttpEndpointAndPortOnlySetsTargetPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithHttpEndpoint(name: "otlp", port: 1004);
 
@@ -342,7 +343,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestWithTcpEndpointAndNoPortAllocatesPort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container = builder.AddContainer("app", "image")
                                .WithEndpoint(name: "custom");
 
@@ -369,7 +370,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestProjectWithHttpEndpointDoesNotAllocatePort()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var project = builder.AddProject<TestProject>("proj")
             .WithHttpEndpoint(name: "hp")
             .WithHttpsEndpoint(name: "hps");
@@ -407,7 +408,7 @@ public class WithEndpointTests
     [Fact]
     public async Task VerifyManifestPortAllocationIsGlobal()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var container0 = builder.AddContainer("app0", "image")
                                .WithEndpoint(name: "custom");
 
@@ -450,7 +451,6 @@ public class WithEndpointTests
         Assert.Equal(expectedManifest0, manifests[0].ToString());
         Assert.Equal(expectedManifest1, manifests[1].ToString());
     }
-
     private sealed class TestProject : IProjectMetadata
     {
         public string ProjectPath => "projectpath";

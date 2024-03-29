@@ -4,6 +4,7 @@
 using System.Net.Sockets;
 using System.Text.Json;
 using Aspire.Hosting.Postgres;
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
 using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -215,7 +216,7 @@ public class AddPostgresTests
     [Fact]
     public async Task VerifyManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var pgServer = builder.AddPostgres("pg");
         var db = pgServer.AddDatabase("db");
 
@@ -257,7 +258,7 @@ public class AddPostgresTests
     [Fact]
     public async Task VerifyManifestWithParameters()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var userNameParameter = builder.AddParameter("user");
         var passwordParameter = builder.AddParameter("pass");
@@ -344,7 +345,7 @@ public class AddPostgresTests
     [Fact]
     public void WithPgAdminAddsContainer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddPostgres("mypostgres").WithPgAdmin(8081);
 
         var container = builder.Resources.Single(r => r.Name == "mypostgres-pgadmin");
@@ -357,7 +358,7 @@ public class AddPostgresTests
     [Fact]
     public void WithPostgresTwiceEndsUpWithOneContainer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddPostgres("mypostgres1").WithPgAdmin(8081);
         builder.AddPostgres("mypostgres2").WithPgAdmin(8081);
 
@@ -415,7 +416,7 @@ public class AddPostgresTests
     [Fact]
     public void ThrowsWithIdenticalChildResourceNames()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var db = builder.AddPostgres("postgres1");
         db.AddDatabase("db");
@@ -426,7 +427,7 @@ public class AddPostgresTests
     [Fact]
     public void ThrowsWithIdenticalChildResourceNamesDifferentParents()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         builder.AddPostgres("postgres1")
             .AddDatabase("db");
@@ -438,7 +439,7 @@ public class AddPostgresTests
     [Fact]
     public void CanAddDatabasesWithDifferentNamesOnSingleServer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var postgres1 = builder.AddPostgres("postgres1");
 
@@ -455,7 +456,7 @@ public class AddPostgresTests
     [Fact]
     public void CanAddDatabasesWithTheSameNameOnMultipleServers()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var db1 = builder.AddPostgres("postgres1")
             .AddDatabase("db1", "imports");

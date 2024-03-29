@@ -4,6 +4,7 @@
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using Aspire.Hosting.MySql;
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
 using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -134,7 +135,7 @@ public class AddMySqlTests
     [Fact]
     public async Task VerifyManifest()
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
         var mysql = appBuilder.AddMySql("mysql");
         var db = mysql.AddDatabase("db");
 
@@ -173,7 +174,7 @@ public class AddMySqlTests
     [Fact]
     public async Task VerifyManifestWithPasswordParameter()
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
         var pass = appBuilder.AddParameter("pass");
 
         var mysql = appBuilder.AddMySql("mysql", pass);
@@ -203,7 +204,7 @@ public class AddMySqlTests
     [Fact]
     public void WithMySqlTwiceEndsUpWithOneAdminContainer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddMySql("mySql").WithPhpMyAdmin();
         builder.AddMySql("mySql2").WithPhpMyAdmin();
 
@@ -238,7 +239,7 @@ public class AddMySqlTests
     [Fact]
     public void WithPhpMyAdminAddsContainer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddMySql("mySql").WithPhpMyAdmin();
 
         var container = builder.Resources.Single(r => r.Name == "mySql-phpmyadmin");
@@ -285,7 +286,7 @@ public class AddMySqlTests
     [Fact]
     public void ThrowsWithIdenticalChildResourceNames()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var db = builder.AddMySql("mysql1");
         db.AddDatabase("db");
@@ -296,7 +297,7 @@ public class AddMySqlTests
     [Fact]
     public void ThrowsWithIdenticalChildResourceNamesDifferentParents()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         builder.AddMySql("mysql1")
             .AddDatabase("db");
@@ -308,7 +309,7 @@ public class AddMySqlTests
     [Fact]
     public void CanAddDatabasesWithDifferentNamesOnSingleServer()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var mysql1 = builder.AddMySql("mysql1");
 
@@ -328,7 +329,7 @@ public class AddMySqlTests
     [Fact]
     public void CanAddDatabasesWithTheSameNameOnMultipleServers()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var db1 = builder.AddMySql("mysql1")
             .AddDatabase("db1", "imports");

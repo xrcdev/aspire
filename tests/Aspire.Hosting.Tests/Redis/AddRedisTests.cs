@@ -3,6 +3,7 @@
 
 using System.Net.Sockets;
 using Aspire.Hosting.Redis;
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
 using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -88,7 +89,7 @@ public class AddRedisTests
     [Fact]
     public async Task VerifyManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("redis");
 
         var manifest = await ManifestUtils.GetManifest(redis.Resource);
@@ -175,7 +176,7 @@ public class AddRedisTests
     [InlineData(false)]
     public void WithDataVolumeAddsVolumeAnnotation(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis");
         if (isReadOnly.HasValue)
         {
@@ -200,7 +201,7 @@ public class AddRedisTests
     [InlineData(false)]
     public void WithDataBindMountAddsMountAnnotation(bool? isReadOnly)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis");
         if (isReadOnly.HasValue)
         {
@@ -222,7 +223,7 @@ public class AddRedisTests
     [Fact]
     public void WithDataVolumeAddsPersistenceAnnotation()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                               .WithDataVolume();
 
@@ -235,7 +236,7 @@ public class AddRedisTests
     [Fact]
     public void WithDataVolumeDoesNotAddPersistenceAnnotationIfIsReadOnly()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                            .WithDataVolume(isReadOnly: true);
 
@@ -247,7 +248,7 @@ public class AddRedisTests
     [Fact]
     public void WithDataBindMountAddsPersistenceAnnotation()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                            .WithDataBindMount("myredisdata");
 
@@ -260,7 +261,7 @@ public class AddRedisTests
     [Fact]
     public void WithDataBindMountDoesNotAddPersistenceAnnotationIfIsReadOnly()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                            .WithDataBindMount("myredisdata", isReadOnly: true);
 
@@ -272,7 +273,7 @@ public class AddRedisTests
     [Fact]
     public void WithPersistenceReplacesPreviousAnnotationInstances()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                            .WithDataVolume()
                            .WithPersistence(TimeSpan.FromSeconds(10), 2);
@@ -286,7 +287,7 @@ public class AddRedisTests
     [Fact]
     public void WithPersistenceAddsCommandLineArgsAnnotation()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var redis = builder.AddRedis("myRedis")
                            .WithPersistence(TimeSpan.FromSeconds(60));
 

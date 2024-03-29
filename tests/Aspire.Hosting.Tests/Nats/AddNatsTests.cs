@@ -6,6 +6,7 @@ using Aspire.Hosting.Utils;
 using System.Net.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using Aspire.Hosting.Testing;
 
 namespace Aspire.Hosting.Tests.Nats;
 
@@ -82,7 +83,7 @@ public class AddNatsTests
     [Fact]
     public void WithNatsContainerOnMultipleResources()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddNats("nats1");
         builder.AddNats("nats2");
 
@@ -92,7 +93,7 @@ public class AddNatsTests
     [Fact]
     public async Task VerifyManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         var nats = builder.AddNats("nats");
 
         var manifest = await ManifestUtils.GetManifest(nats.Resource);

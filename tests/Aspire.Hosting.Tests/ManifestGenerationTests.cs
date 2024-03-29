@@ -301,6 +301,7 @@ public class ManifestGenerationTests
         {
             verify.Add(arg => Assert.Equal(addExecutableArg, arg.GetString()));
         }
+
         foreach (var withArgsArg in withArgsArgs)
         {
             verify.Add(arg => Assert.Equal(withArgsArg, arg.GetString()));

@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.RabbitMQ\Aspire.Hosting.RabbitMQ.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.Redis\Aspire.Hosting.Redis.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.SqlServer\Aspire.Hosting.SqlServer.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\..\src\Aspire.Hosting.Testing\Aspire.Hosting.Testing.csproj" IsAspireProjectResource="false" />
   </ItemGroup>
   <ItemGroup Condition="'$(TestsRunningOutsideOfRepo)' == 'true'">
     <PackageReference Include="Aspire.Hosting.Azure" />

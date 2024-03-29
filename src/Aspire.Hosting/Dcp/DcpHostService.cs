@@ -85,19 +85,25 @@ internal sealed class DcpHostService : IHostedLifecycleService, IAsyncDisposable
         }
 
         _shutdownCts.Cancel();
+        await _appExecutor.StopAsync(cancellationToken).ConfigureAwait(false);
 
         await TaskHelpers.WaitIgnoreCancelAsync(_logProcessorTask, _logger, "Error in logging socket processor.").ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_dcpRunDisposable is null)
+        if (_dcpRunDisposable is { } disposable)
         {
-            return;
-        }
+            _dcpRunDisposable = null;
 
-        await _dcpRunDisposable.DisposeAsync().ConfigureAwait(false);
-        _dcpRunDisposable = null;
+            try
+            {
+                await disposable.DisposeAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
     }
 
     private void EnsureDcpHostRunning()

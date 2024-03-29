@@ -52,8 +52,11 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
 {
     private static readonly TimeSpan s_initialRetryDelay = TimeSpan.FromMilliseconds(100);
     private static GroupVersion GroupVersion => Model.Dcp.GroupVersion;
+    private readonly SemaphoreSlim _kubeconfigReadSemaphore = new(1);
 
     private DcpKubernetesClient? _kubernetes;
+    private ResiliencePipeline? _resiliencePipeline;
+    private bool _disposed;
 
     public TimeSpan MaxRetryDuration { get; set; } = TimeSpan.FromSeconds(20);
 
@@ -90,6 +93,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
     public Task<T> CreateAsync<T>(T obj, CancellationToken cancellationToken = default)
         where T : CustomResource
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var resourceType = GetResourceFor<T>();
         var namespaceParameter = obj.Namespace();
 
@@ -121,6 +125,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
     public Task<List<T>> ListAsync<T>(string? namespaceParameter = null, CancellationToken cancellationToken = default)
         where T : CustomResource
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var resourceType = GetResourceFor<T>();
 
         return ExecuteWithRetry(
@@ -149,6 +154,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
     public Task<T> DeleteAsync<T>(string name, string? namespaceParameter = null, CancellationToken cancellationToken = default)
         where T : CustomResource
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var resourceType = GetResourceFor<T>();
 
         return ExecuteWithRetry(
@@ -181,6 +187,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : CustomResource
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var resourceType = GetResourceFor<T>();
         var result = await ExecuteWithRetry(
             DcpApiOperationType.Watch,
@@ -206,7 +213,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
             },
             cancellationToken).ConfigureAwait(false);
 
-        await foreach (var item in result)
+        await foreach (var item in result.ConfigureAwait(false))
         {
             yield return item;
         }
@@ -219,6 +226,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
         bool? timestamps = false,
         CancellationToken cancellationToken = default) where T : CustomResource
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var resourceType = GetResourceFor<T>();
 
         ImmutableArray<(string name, string value)>? queryParams = [
@@ -247,12 +255,6 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
             },
             cancellationToken
         );
-    }
-
-    public void Dispose()
-    {
-        _kubeconfigReadSemaphore?.Dispose();
-        _kubernetes?.Dispose();
     }
 
     private static string GetResourceFor<T>() where T : CustomResource
@@ -292,6 +294,7 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
         {
             while (true)
             {
+                ObjectDisposedException.ThrowIf(_disposed, this);
                 try
                 {
                     await EnsureKubernetesAsync(cancellationToken).ConfigureAwait(false);
@@ -315,14 +318,9 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
         {
             AspireEventSource.Instance.DcpApiCallStop(operationType, resourceType);
         }
-
     }
 
     private static bool IsRetryable(Exception ex) => ex is HttpRequestException || ex is KubeConfigException;
-
-    private readonly SemaphoreSlim _kubeconfigReadSemaphore = new(1);
-
-    private ResiliencePipeline? _resiliencePipeline;
 
     private ResiliencePipeline GetReadKubeconfigResiliencePipeline()
     {
@@ -355,6 +353,8 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
 
     private async Task EnsureKubernetesAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         // Return early before waiting for the semaphore if we can.
         if (_kubernetes != null)
         {
@@ -397,5 +397,12 @@ internal sealed class KubernetesService(ILogger<KubernetesService> logger, IOpti
         {
             _kubeconfigReadSemaphore.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        _kubeconfigReadSemaphore?.Dispose();
+        _kubernetes?.Dispose();
     }
 }

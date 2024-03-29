@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Aspire.Hosting.Dapr;
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
-using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -14,7 +14,7 @@ public class DaprTests
     [Fact]
     public async Task WithDaprSideCarAddsAnnotationAndSidecarResource()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
         builder.AddDapr(o =>
         {
             // Fake path to avoid throwing

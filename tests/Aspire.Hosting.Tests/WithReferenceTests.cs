@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Tests.Utils;
-using Aspire.Hosting.Utils;
 using Xunit;
 
 namespace Aspire.Hosting.Tests;
@@ -14,7 +14,7 @@ public class WithReferenceTests
     [InlineData("MYbinding")]
     public async Task ResourceWithSingleEndpointProducesSimplifiedEnvironmentVariables(string endpointName)
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Create a binding and its matching annotation (simulating DCP behavior)
         var projectA = builder.AddProject<ProjectA>("projecta")
@@ -33,7 +33,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ResourceWithConflictingEndpointsProducesFullyScopedEnvironmentVariables()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                               .WithHttpsEndpoint(1000, 2000, "mybinding")
@@ -57,7 +57,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ResourceWithNonConflictingEndpointsProducesAllVariantsOfEnvironmentVariables()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Create a binding and its matching annotation (simulating DCP behavior)
         var projectA = builder.AddProject<ProjectA>("projecta")
@@ -82,7 +82,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ResourceWithConflictingEndpointsProducesAllEnvironmentVariables()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Create a binding and its matching annotation (simulating DCP behavior)
         var projectA = builder.AddProject<ProjectA>("projecta")
@@ -105,7 +105,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ResourceWithEndpointsProducesAllEnvironmentVariables()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                               .WithHttpsEndpoint(1000, 2000, "mybinding")
@@ -126,7 +126,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ConnectionStringResourceThrowsWhenMissingConnectionString()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddResource(new TestResource("resource"));
@@ -142,7 +142,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ConnectionStringResourceOptionalWithMissingConnectionString()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddResource(new TestResource("resource"));
@@ -158,7 +158,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ParameterAsConnectionStringResourceThrowsWhenConnectionStringSectionMissing()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var missingResource = builder.AddConnectionString("missingresource");
@@ -177,7 +177,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ParameterAsConnectionStringResourceInjectsConnectionStringWhenPresent()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         builder.Configuration["ConnectionStrings:resource"] = "test connection string";
 
@@ -195,7 +195,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ParameterAsConnectionStringResourceInjectsExpressionWhenPublishingManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddConnectionString("resource");
@@ -211,7 +211,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ParameterAsConnectionStringResourceInjectsCorrectEnvWhenPublishingManifest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddConnectionString("resource", "MY_ENV");
@@ -227,7 +227,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ConnectionStringResourceWithConnectionString()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddResource(new TestResource("resource")
@@ -248,7 +248,7 @@ public class WithReferenceTests
     [Fact]
     public async Task ConnectionStringResourceWithConnectionStringOverwriteName()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         // Get the service provider.
         var resource = builder.AddResource(new TestResource("resource")
@@ -270,7 +270,7 @@ public class WithReferenceTests
     [Fact]
     public void WithReferenceHttpRelativeUriThrowsException()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         Assert.Throws<InvalidOperationException>(() => builder.AddProject<ProjectA>("projecta").WithReference("petstore", new Uri("petstore.swagger.io", UriKind.Relative)));
     }
@@ -278,7 +278,7 @@ public class WithReferenceTests
     [Fact]
     public void WithReferenceHttpUriThrowsException()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         Assert.Throws<InvalidOperationException>(() => builder.AddProject<ProjectA>("projecta").WithReference("petstore", new Uri("https://petstore.swagger.io/v2")));
     }
@@ -286,7 +286,7 @@ public class WithReferenceTests
     [Fact]
     public async Task WithReferenceHttpProduceEnvironmentVariables()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var projectA = builder.AddProject<ProjectA>("projecta")
                                .WithReference("petstore", new Uri("https://petstore.swagger.io/"));

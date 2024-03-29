@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Sockets;
@@ -60,7 +61,7 @@ public class AddKafkaTests
     [Fact]
     public async Task VerifyManifest()
     {
-        using var appBuilder = TestDistributedApplicationBuilder.Create();
+        using var appBuilder = DistributedApplicationTestingBuilder.Create();
 
         var kafka = appBuilder.AddKafka("kafka");
 

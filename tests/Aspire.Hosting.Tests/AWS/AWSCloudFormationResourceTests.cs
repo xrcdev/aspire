@@ -3,6 +3,7 @@
 
 using Amazon;
 using Aspire.Hosting.AWS.CloudFormation;
+using Aspire.Hosting.Testing;
 using Aspire.Hosting.Utils;
 using Xunit;
 
@@ -12,7 +13,7 @@ public class AWSCloudFormationResourceTests
     [Fact]
     public void AddAWSCloudFormationStackResourceTest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var awsSdkConfig = builder.AddAWSSDKConfig()
                                 .WithRegion(RegionEndpoint.USWest2)
@@ -31,7 +32,7 @@ public class AWSCloudFormationResourceTests
     [Fact]
     public void AddAWSCloudFormationTemplateResourceTest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var awsSdkConfig = builder.AddAWSSDKConfig()
                                 .WithRegion(RegionEndpoint.USWest2)
@@ -58,7 +59,7 @@ public class AWSCloudFormationResourceTests
     [Fact]
     public async Task ManifestAWSCloudFormationStackResourceTest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var resourceBuilder = builder.AddAWSCloudFormationStack("ExistingStack");
 
@@ -87,7 +88,7 @@ public class AWSCloudFormationResourceTests
     [Fact]
     public async Task ManifestAWSCloudFormationTemplateResourceTest()
     {
-        using var builder = TestDistributedApplicationBuilder.Create();
+        using var builder = DistributedApplicationTestingBuilder.Create();
 
         var resourceBuilder = builder.AddAWSCloudFormationTemplate("NewStack", "cf.template");
 
