@@ -239,6 +239,7 @@ public sealed class DashboardWebApplication : IAsyncDisposable
 
         _app.UseAuthorization();
 
+        _app.UseMiddleware<ContentSecurityPolicyMiddleware>();
         _app.UseAntiforgery();
 
         _app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
