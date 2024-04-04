@@ -317,7 +317,7 @@ public class ProjectResourceTests
 
     private static IDistributedApplicationBuilder CreateBuilder(string[]? args = null, DistributedApplicationOperation operation = DistributedApplicationOperation.Publish)
     {
-        var resolvedArgs = new List<string>{ "--environment", "Development" };
+        var resolvedArgs = new List<string>();
         if (args != null)
         {
             resolvedArgs.AddRange(args);
