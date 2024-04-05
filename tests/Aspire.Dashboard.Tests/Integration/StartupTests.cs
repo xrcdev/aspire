@@ -251,6 +251,88 @@ public class StartupTests(ITestOutputHelper testOutputHelper)
 
                 var uri = new Uri((string)GetValue(w.State, "OtlpEndpointUri")!);
                 Assert.NotEqual(0, uri.Port);
+            },
+            w =>
+            {
+                Assert.Equal("OTLP server is unsecured. Untrusted apps can send telemetry to the dashboard.", GetValue(w.State, "{OriginalFormat}"));
+                Assert.Equal(LogLevel.Warning, w.LogLevel);
+            });
+
+        object? GetValue(object? values, string key)
+        {
+            var list = values as IReadOnlyList<KeyValuePair<string, object>>;
+            return list?.SingleOrDefault(kvp => kvp.Key == key).Value;
+        }
+    }
+
+    [Fact]
+    public async Task LogOutput_LocalhostAddress_LocalhostInLogOutput()
+    {
+        // Arrange
+        var testSink = new TestSink();
+        DashboardWebApplication? app = null;
+
+        int? frontendPort = null;
+        int? otlpPort = null;
+        try
+        {
+            await ServerRetryHelper.BindPortsWithRetry(async port1 =>
+            {
+                await ServerRetryHelper.BindPortsWithRetry(async port2 =>
+                {
+                    await ServerRetryHelper.BindPortsWithRetry(async port3 =>
+                    {
+                        frontendPort = port1;
+                        otlpPort = port3;
+
+                        app = IntegrationTestHelpers.CreateDashboardWebApplication(testOutputHelper,
+                            additionalConfiguration: data =>
+                            {
+                                data[DashboardConfigNames.DashboardFrontendUrlName.ConfigKey] = $"https://localhost:{port1};http://localhost:{port2}";
+                                data[DashboardConfigNames.DashboardOtlpUrlName.ConfigKey] = $"http://localhost:{port3}";
+                            }, testSink: testSink);
+
+                        // Act
+                        await app.StartAsync();
+                    }, NullLogger.Instance);
+                }, NullLogger.Instance);
+            }, NullLogger.Instance);
+        }
+        finally
+        {
+            if (app is not null)
+            {
+                await app.DisposeAsync();
+            }
+        }
+
+        // Assert
+        var l = testSink.Writes.Where(w => w.LoggerName == typeof(DashboardWebApplication).FullName).ToList();
+        Assert.Collection(l,
+            w =>
+            {
+                Assert.Equal("Aspire version: {Version}", GetValue(w.State, "{OriginalFormat}"));
+            },
+            w =>
+            {
+                Assert.Equal("Now listening on: {DashboardUri}", GetValue(w.State, "{OriginalFormat}"));
+
+                var uri = new Uri((string)GetValue(w.State, "DashboardUri")!);
+                Assert.Equal("https", uri.Scheme);
+                Assert.Equal("localhost", uri.Host);
+                Assert.Equal(frontendPort, uri.Port);
+            },
+            w =>
+            {
+                Assert.Equal("OTLP server running at: {OtlpEndpointUri}", GetValue(w.State, "{OriginalFormat}"));
+
+                var uri = new Uri((string)GetValue(w.State, "OtlpEndpointUri")!);
+                Assert.NotEqual(0, uri.Port);
+            },
+            w =>
+            {
+                Assert.Equal("OTLP server is unsecured. Untrusted apps can send telemetry to the dashboard.", GetValue(w.State, "{OriginalFormat}"));
+                Assert.Equal(LogLevel.Warning, w.LogLevel);
             });
 
         object? GetValue(object? values, string key)

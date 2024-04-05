@@ -88,10 +88,10 @@ public partial class MainLayout : IGlobalKeydownListener, IAsyncDisposable
         await MessageService.ShowMessageBarAsync(options =>
         {
             options.Title = "Telemetry is unsecured";
-            options.Body = "The OTLP server is unsecured. Telemetry could come from an untrusted source.";
+            options.Body = "The OTLP server is unsecured. Untrusted apps can send telemetry to the dashboard.";
             options.Link = new() { Text = "More information", Href = "http://localhost", Target = "_blank" };
             options.Intent = MessageIntent.Warning;
-            options.Section = "MessagesTop";
+            options.Section = MessageBarSection;
             options.AllowDismiss = true;
         });
     }

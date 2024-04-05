@@ -167,7 +167,7 @@ public sealed class DashboardWebApplication : IAsyncDisposable
         {
             if (_frontendEndPointAccessor != null)
             {
-                var url = GetEndpointUrl(_frontendEndPointAccessor());
+                var url = _frontendEndPointAccessor().Address;
                 _logger.LogInformation("Now listening on: {DashboardUri}", url);
 
                 var options = _app.Services.GetRequiredService<IOptions<DashboardOptions>>().Value;
@@ -180,15 +180,13 @@ public sealed class DashboardWebApplication : IAsyncDisposable
             if (_otlpServiceEndPointAccessor != null)
             {
                 // This isn't used by dotnet watch but still useful to have for debugging
-                _logger.LogInformation("OTLP server running at: {OtlpEndpointUri}", GetEndpointUrl(_otlpServiceEndPointAccessor()));
+                _logger.LogInformation("OTLP server running at: {OtlpEndpointUri}", _otlpServiceEndPointAccessor().Address);
             }
 
             if (_dashboardOptionsMonitor.CurrentValue.Otlp.AuthMode == OtlpAuthMode.Unsecured)
             {
                 _logger.LogWarning("OTLP server is unsecured. Untrusted apps can send telemetry to the dashboard.");
             }
-
-            static string GetEndpointUrl(EndpointInfo info) => info.Address;
         });
 
         // Redirect browser directly to /structuredlogs address if the dashboard is running without a resource service.
@@ -432,8 +430,12 @@ public sealed class DashboardWebApplication : IAsyncDisposable
             // The endpoint on ListenOptions is updated after binding, so accessing it via the func after the server
             // has started returns the resolved port.
             var address = BindingAddress.Parse(endpointConfiguration.ConfigSection["Url"]!);
-            var resolvedAddress = address.Scheme.ToLowerInvariant() + Uri.SchemeDelimiter + address.Host.ToLowerInvariant() + ":" + address.Port.ToString(CultureInfo.InvariantCulture);
-            return () => new EndpointInfo(resolvedAddress, endpointConfiguration.ListenOptions.IPEndPoint!, endpointConfiguration.IsHttps);
+            return () =>
+            {
+                var endpoint = endpointConfiguration.ListenOptions.IPEndPoint!;
+                var resolvedAddress = address.Scheme.ToLowerInvariant() + Uri.SchemeDelimiter + address.Host.ToLowerInvariant() + ":" + endpoint.Port.ToString(CultureInfo.InvariantCulture);
+                return new EndpointInfo(resolvedAddress, endpoint, endpointConfiguration.IsHttps);
+            };
         }
     }
 

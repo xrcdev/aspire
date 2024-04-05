@@ -73,11 +73,6 @@ fluent-toolbar[orientation=horizontal] {
     color-scheme: dark;
 }
 
-.fluent-messagebar.intent-warning {
-    background-color: var(--messagebar-warning-background-color) !important;
-    border: 1px solid var(--messagebar-warning-border-color) !important;
-}
-
 [data-theme="light"] {
     color-scheme: light;
 }
@@ -163,6 +158,11 @@ fluent-data-grid .loading-content-cell .stack-horizontal {
 .top-messagebar {
     padding: calc(var(--design-unit) * 2px);
     padding-bottom: 0;
+}
+
+.fluent-messagebar.intent-warning {
+    background-color: var(--messagebar-warning-background-color) !important;
+    border: 1px solid var(--messagebar-warning-border-color) !important;
 }
 
 /* The fluent dialog's default fill color is too dark in our current dark theme.
