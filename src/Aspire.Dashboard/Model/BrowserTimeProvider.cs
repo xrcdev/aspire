@@ -33,7 +33,7 @@ public class BrowserTimeProvider : TimeProvider
             timeZoneInfo = TimeZoneInfo.Utc;
         }
 
-        _logger.LogInformation("Browser time zone set to '{TimeZone}' with UTC offset {UtcOffset}.", timeZoneInfo.Id, timeZoneInfo.BaseUtcOffset);
+        _logger.LogDebug("Browser time zone set to '{TimeZone}' with UTC offset {UtcOffset}.", timeZoneInfo.Id, timeZoneInfo.BaseUtcOffset);
         _browserLocalTimeZone = timeZoneInfo;
     }
 }
