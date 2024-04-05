@@ -22,6 +22,7 @@ public partial class MainLayout : IGlobalKeydownListener, IAsyncDisposable
 
     private const string SettingsDialogId = "SettingsDialog";
     private const string HelpDialogId = "HelpDialog";
+    private const string MessageBarSection = "MessagesTop";
 
     [Inject]
     public required ThemeManager ThemeManager { get; init; }
@@ -46,6 +47,9 @@ public partial class MainLayout : IGlobalKeydownListener, IAsyncDisposable
 
     [Inject]
     public required ShortcutManager ShortcutManager { get; init; }
+
+    [Inject]
+    public required IMessageService MessageService { get; init; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,6 +82,18 @@ public partial class MainLayout : IGlobalKeydownListener, IAsyncDisposable
 
         var result = await JS.InvokeAsync<string>("window.getBrowserTimeZone");
         TimeProvider.SetBrowserTimeZone(result);
+
+        // ShowMessageBarAsync must come after an await. Otherwise it will NRE.
+        // I think this order allows the message bar provider to be fully initialized.
+        await MessageService.ShowMessageBarAsync(options =>
+        {
+            options.Title = "Telemetry is unsecured";
+            options.Body = "The OTLP server is unsecured. Telemetry could come from an untrusted source.";
+            options.Link = new() { Text = "More information", Href = "http://localhost", Target = "_blank" };
+            options.Intent = MessageIntent.Warning;
+            options.Section = "MessagesTop";
+            options.AllowDismiss = true;
+        });
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

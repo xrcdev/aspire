@@ -33,7 +33,10 @@
     </FluentHeader>
     <NavMenu />
     <FluentBodyContent Class="custom-body-content">
-        <FluentToastProvider />
+        <div>
+            <FluentToastProvider />
+            <FluentMessageBarProvider Section="@MessageBarSection" Class="top-messagebar" />
+        </div>
         @Body
     </FluentBodyContent>
 

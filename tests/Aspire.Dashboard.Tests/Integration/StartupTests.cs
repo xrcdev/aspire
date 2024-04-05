@@ -41,9 +41,7 @@ public class StartupTests(ITestOutputHelper testOutputHelper)
         // Assert
         Assert.Collection(app.ValidationFailures,
             s => s.Contains("Dashboard:Frontend:EndpointUrls"),
-            s => s.Contains("Dashboard:Frontend:AuthMode"),
-            s => s.Contains("Dashboard:Otlp:EndpointUrl"),
-            s => s.Contains("Dashboard:Otlp:AuthMode"));
+            s => s.Contains("Dashboard:Otlp:EndpointUrl"));
     }
 
     [Fact]
@@ -187,17 +185,21 @@ public class StartupTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-    public async Task Configuration_NoOtlpAuthMode_Error()
+    public async Task Configuration_NoAuthMode_DefaultAuthModes()
     {
         // Arrange & Act
         await using var app = IntegrationTestHelpers.CreateDashboardWebApplication(testOutputHelper,
             additionalConfiguration: data =>
             {
                 data.Remove(DashboardConfigNames.DashboardOtlpAuthModeName.ConfigKey);
+                data.Remove(DashboardConfigNames.DashboardFrontendAuthModeName.ConfigKey);
             });
 
         // Assert
-        Assert.Contains("Dashboard:Otlp:AuthMode", app.ValidationFailures.Single());
+        Assert.Equal(FrontendAuthMode.BrowserToken, app.DashboardOptionsMonitor.CurrentValue.Frontend.AuthMode);
+        Assert.Equal(16, Convert.FromHexString(app.DashboardOptionsMonitor.CurrentValue.Frontend.BrowserToken!).Length);
+        Assert.Equal(OtlpAuthMode.Unsecured, app.DashboardOptionsMonitor.CurrentValue.Otlp.AuthMode);
+        Assert.Empty(app.ValidationFailures);
     }
 
     [Fact]
@@ -207,7 +209,6 @@ public class StartupTests(ITestOutputHelper testOutputHelper)
         await using var app = IntegrationTestHelpers.CreateDashboardWebApplication(testOutputHelper,
             additionalConfiguration: data =>
             {
-                data.Remove(DashboardConfigNames.DashboardOtlpAuthModeName.ConfigKey);
                 data[DashboardConfigNames.DashboardUnsecuredAllowAnonymousName.ConfigKey] = bool.TrueString;
             });
 
@@ -215,8 +216,9 @@ public class StartupTests(ITestOutputHelper testOutputHelper)
         await app.StartAsync();
 
         // Assert
-        AssertDynamicIPEndpoint(app.FrontendEndPointAccessor);
-        AssertDynamicIPEndpoint(app.OtlpServiceEndPointAccessor);
+        Assert.Equal(FrontendAuthMode.Unsecured, app.DashboardOptionsMonitor.CurrentValue.Frontend.AuthMode);
+        Assert.Equal(OtlpAuthMode.Unsecured, app.DashboardOptionsMonitor.CurrentValue.Otlp.AuthMode);
+        Assert.Empty(app.ValidationFailures);
     }
 
     [Fact]

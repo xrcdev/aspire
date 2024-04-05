@@ -31,9 +31,10 @@
     width: 100vw;
     display: grid;
     grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
         "icon head"
+        "nav messages"
         "nav main";
     background-color: var(--fill-color);
     color: var(--neutral-foreground-rest);
@@ -62,6 +63,8 @@
     overflow-x: auto; /* allow horizontal scrolling */
     border-top: 1px solid var(--neutral-stroke-rest);
     border-left: 1px solid var(--neutral-stroke-rest);
+    display: grid;
+    grid-template-rows: auto 1fr;
 }
 
 ::deep .header-right {
