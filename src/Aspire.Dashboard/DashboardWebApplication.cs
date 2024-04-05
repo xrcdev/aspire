@@ -170,7 +170,7 @@ public sealed class DashboardWebApplication : IAsyncDisposable
                 var url = _frontendEndPointAccessor().Address;
                 _logger.LogInformation("Now listening on: {DashboardUri}", url);
 
-                var options = _app.Services.GetRequiredService<IOptions<DashboardOptions>>().Value;
+                var options = _app.Services.GetRequiredService<IOptionsMonitor<DashboardOptions>>().CurrentValue;
                 if (options.Frontend.AuthMode == FrontendAuthMode.BrowserToken)
                 {
                     LoggingHelpers.WriteDashboardUrl(_logger, url, options.Frontend.BrowserToken);

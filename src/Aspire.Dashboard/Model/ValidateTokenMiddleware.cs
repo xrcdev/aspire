@@ -52,7 +52,11 @@ internal sealed class ValidateTokenMiddleware
                     qs.Remove("t");
 
                     var newQuerystring = qs.ToString();
-                    context.Response.Redirect($"{context.Request.Path}?{newQuerystring}");
+                    if (!string.IsNullOrEmpty(newQuerystring))
+                    {
+                        newQuerystring = "?" + newQuerystring;
+                    }
+                    context.Response.Redirect($"{context.Request.Path}{newQuerystring}");
                 }
 
                 return;

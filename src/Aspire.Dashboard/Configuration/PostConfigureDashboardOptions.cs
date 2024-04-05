@@ -42,7 +42,10 @@ public sealed class PostConfigureDashboardOptions : IPostConfigureOptions<Dashbo
         }
         if (options.Frontend.AuthMode == FrontendAuthMode.BrowserToken && string.IsNullOrEmpty(options.Frontend.BrowserToken))
         {
-            options.Frontend.BrowserToken = TokenGenerator.GenerateToken();
+            var token = TokenGenerator.GenerateToken();
+            // Set in configuration so the same value is used in the future.
+            _configuration[DashboardConfigNames.DashboardFrontendBrowserTokenName.ConfigKey] = token;
+            options.Frontend.BrowserToken = token;
         }
     }
 }
