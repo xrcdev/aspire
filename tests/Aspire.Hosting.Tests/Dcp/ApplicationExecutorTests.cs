@@ -122,7 +122,6 @@ public class ApplicationExecutorTests
             NullLogger<ApplicationExecutor>.Instance,
             NullLogger<DistributedApplication>.Instance,
             distributedAppModel,
-            new DistributedApplicationOptions(),
             kubernetesService ?? new MockKubernetesService(),
             Array.Empty<IDistributedApplicationLifecycleHook>(),
             configuration,
@@ -130,7 +129,6 @@ public class ApplicationExecutorTests
             {
                 DashboardPath = "./dashboard"
             }),
-            new MockDashboardEndpointProvider(),
             new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run),
             new ResourceNotificationService(new NullLogger<ResourceNotificationService>()),
             new ResourceLoggerService(),
