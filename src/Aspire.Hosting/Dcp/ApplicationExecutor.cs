@@ -526,11 +526,12 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
         var urls = GetUrls(container);
 
         var environment = GetEnvironmentVariables(container.Status?.EffectiveEnv ?? container.Spec.Env, container.Spec.Env);
+        var state = container.AppModelInitialState is "Hidden" ? "Hidden" : container.Status?.State;
 
         return previous with
         {
             ResourceType = KnownResourceTypes.Container,
-            State = container.Status?.State,
+            State = state,
             // Map a container exit code of -1 (unknown) to null
             ExitCode = container.Status?.ExitCode is null or Conventions.UnknownExitCode ? null : container.Status.ExitCode,
             Properties = [
@@ -574,6 +575,8 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
             projectPath = appModelResource is ProjectResource p ? p.GetProjectMetadata().ProjectPath : null;
         }
 
+        var state = executable.AppModelInitialState is "Hidden" ? "Hidden" : executable.Status?.State;
+
         var urls = GetUrls(executable);
 
         var environment = GetEnvironmentVariables(executable.Status?.EffectiveEnv, executable.Spec.Env);
@@ -583,7 +586,7 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
             return previous with
             {
                 ResourceType = KnownResourceTypes.Project,
-                State = executable.Status?.State,
+                State = state,
                 ExitCode = executable.Status?.ExitCode,
                 Properties = [
                     new(KnownProperties.Executable.Path, executable.Spec.ExecutablePath),
@@ -601,7 +604,7 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
         return previous with
         {
             ResourceType = KnownResourceTypes.Executable,
-            State = executable.Status?.State,
+            State = state,
             ExitCode = executable.Status?.ExitCode,
             Properties = [
                 new(KnownProperties.Executable.Path, executable.Spec.ExecutablePath),
@@ -931,6 +934,7 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
             exe.Spec.ExecutionType = ExecutionType.Process;
             exe.Annotate(CustomResource.OtelServiceNameAnnotation, exe.Metadata.Name);
             exe.Annotate(CustomResource.ResourceNameAnnotation, executable.Name);
+            SetInitialResourceState(executable, exe);
 
             var exeAppResource = new AppResource(executable, exe);
             AddServicesProducedInfo(executable, exe, exeAppResource);
@@ -958,6 +962,8 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
             IAnnotationHolder annotationHolder = ers.Spec.Template;
             annotationHolder.Annotate(CustomResource.OtelServiceNameAnnotation, ers.Metadata.Name);
             annotationHolder.Annotate(CustomResource.ResourceNameAnnotation, project.Name);
+
+            SetInitialResourceState(project, annotationHolder);
 
             var projectLaunchConfiguration = new ProjectLaunchConfiguration();
             projectLaunchConfiguration.ProjectPath = projectMetadata.ProjectPath;
@@ -1040,6 +1046,16 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
             var exeAppResource = new AppResource(project, ers);
             AddServicesProducedInfo(project, annotationHolder, exeAppResource);
             _appResources.Add(exeAppResource);
+        }
+    }
+
+    private static void SetInitialResourceState(IResource resource, IAnnotationHolder annotationHolder)
+    {
+        // Store the initial state of the resource
+        if (resource.TryGetLastAnnotation<ResourceSnapshotAnnotation>(out var initial) &&
+            initial.InitialSnapshot.State?.Text is string state && !string.IsNullOrEmpty(state))
+        {
+            annotationHolder.Annotate(CustomResource.ResourceStateAnnotation, state);
         }
     }
 
@@ -1264,6 +1280,7 @@ internal sealed class ApplicationExecutor(ILogger<ApplicationExecutor> logger,
 
             ctr.Annotate(CustomResource.ResourceNameAnnotation, container.Name);
             ctr.Annotate(CustomResource.OtelServiceNameAnnotation, container.Name);
+            SetInitialResourceState(container, ctr);
 
             if (container.TryGetContainerMounts(out var containerMounts))
             {

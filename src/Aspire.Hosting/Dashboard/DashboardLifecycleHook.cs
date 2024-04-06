@@ -116,7 +116,7 @@ internal sealed class DashboardLifecycleHook(IConfiguration configuration,
                 ProjectResource => KnownResourceTypes.Project,
                 _ => KnownResourceTypes.Container
             },
-            State = "Hidden"
+            State = configuration.GetBool("DOTNET_ASPIRE_SHOW_DASHBOARD_RESOURCES") is true ? null : "Hidden"
         };
 
         dashboardResource.Annotations.Add(new ResourceSnapshotAnnotation(snapshot));
