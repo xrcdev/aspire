@@ -87,9 +87,14 @@ public partial class MainLayout : IGlobalKeydownListener, IAsyncDisposable
         // I think this order allows the message bar provider to be fully initialized.
         await MessageService.ShowMessageBarAsync(options =>
         {
-            options.Title = "Telemetry is unsecured";
-            options.Body = "The OTLP server is unsecured. Untrusted apps can send telemetry to the dashboard.";
-            options.Link = new() { Text = "More information", Href = "http://localhost", Target = "_blank" };
+            options.Title = Loc[nameof(Resources.Layout.MessageTelemetryTitle)];
+            options.Body = Loc[nameof(Resources.Layout.MessageTelemetryBody)];
+            options.Link = new()
+            {
+                Text = Loc[nameof(Resources.Layout.MessageTelemetryLink)],
+                Href = "https://aka.ms/dotnet/aspire/telemetry-unsecured",
+                Target = "_blank"
+            };
             options.Intent = MessageIntent.Warning;
             options.Section = MessageBarSection;
             options.AllowDismiss = true;
