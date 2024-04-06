@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Aspire.Dashboard.Model;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Dcp;
 using Aspire.Hosting.Lifecycle;
@@ -15,13 +16,14 @@ internal sealed class DashboardLifecycleHook(IConfiguration configuration,
                                              IOptions<DcpOptions> dcpOptions,
                                              DistributedApplicationOptions distributedApplicationOptions,
                                              ILogger<DistributedApplication> distributedApplicationLogger,
-                                             IDashboardEndpointProvider dashboardEndpointProvider) : IDistributedApplicationLifecycleHook
+                                             IDashboardEndpointProvider dashboardEndpointProvider,
+                                             DistributedApplicationExecutionContext executionContext) : IDistributedApplicationLifecycleHook
 {
     private readonly string? _dashboardPath = dcpOptions.Value.DashboardPath;
 
     public Task BeforeStartAsync(DistributedApplicationModel model, CancellationToken cancellationToken)
     {
-        if (distributedApplicationOptions.DisableDashboard)
+        if (distributedApplicationOptions.DisableDashboard || executionContext.IsPublishMode)
         {
             return Task.CompletedTask;
         }
@@ -97,9 +99,6 @@ internal sealed class DashboardLifecycleHook(IConfiguration configuration,
 
     private void ConfigureAspireDashboardResource(IResource dashboardResource)
     {
-        // Don't publish the resource to the manifest.
-        dashboardResource.Annotations.Add(ManifestPublishingCallbackAnnotation.Ignore);
-
         // Remove endpoint annotations because we are directly configuring
         // the dashboard app (it doesn't go through the proxy!).
         var endpointAnnotations = dashboardResource.Annotations.OfType<EndpointAnnotation>().ToList();
@@ -107,6 +106,20 @@ internal sealed class DashboardLifecycleHook(IConfiguration configuration,
         {
             dashboardResource.Annotations.Remove(endpointAnnotation);
         }
+
+        var snapshot = new CustomResourceSnapshot()
+        {
+            Properties = [],
+            ResourceType = dashboardResource switch
+            {
+                ExecutableResource => KnownResourceTypes.Executable,
+                ProjectResource => KnownResourceTypes.Project,
+                _ => KnownResourceTypes.Container
+            },
+            State = "Hidden"
+        };
+
+        dashboardResource.Annotations.Add(new ResourceSnapshotAnnotation(snapshot));
 
         dashboardResource.Annotations.Add(new EnvironmentCallbackAnnotation(async context =>
         {

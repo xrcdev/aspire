@@ -137,6 +137,8 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
         _innerBuilder.Services.AddSingleton<IDashboardEndpointProvider, HostDashboardEndpointProvider>();
         _innerBuilder.Services.AddSingleton<IDcpDependencyCheckService, DcpDependencyCheck>();
         _innerBuilder.Services.AddHostedService<DcpHostService>();
+        _innerBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<DcpOptions>, ConfigureDefaultDcpOptions>());
+        _innerBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<DcpOptions>, ValidateDcpOptions>());
 
         // We need a unique path per application instance
         _innerBuilder.Services.AddSingleton(new Locations());
@@ -182,14 +184,6 @@ public class DistributedApplicationBuilder : IDistributedApplicationBuilder
         };
         _innerBuilder.Configuration.AddCommandLine(options.Args ?? [], switchMappings);
         _innerBuilder.Services.Configure<PublishingOptions>(_innerBuilder.Configuration.GetSection(PublishingOptions.Publishing));
-        _innerBuilder.Services.Configure<DcpOptions>(
-            o => o.ApplyApplicationConfiguration(
-                options,
-                dcpPublisherConfiguration: _innerBuilder.Configuration.GetSection(DcpOptions.DcpPublisher),
-                publishingConfiguration: _innerBuilder.Configuration.GetSection(PublishingOptions.Publishing),
-                coreConfiguration: _innerBuilder.Configuration
-            )
-        );
     }
 
     /// <inheritdoc />
