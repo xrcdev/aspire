@@ -28,6 +28,7 @@ public sealed class TelemetryRepository : IDisposable
     private readonly PauseManager _pauseManager;
     private readonly IOutgoingPeerResolver[] _outgoingPeerResolvers;
     private readonly ILogger _logger;
+    private readonly ITelemetryPersistence? _persistence;
 
     private readonly object _lock = new();
     internal TimeSpan _subscriptionMinExecuteInterval = TimeSpan.FromMilliseconds(100);
@@ -63,7 +64,12 @@ public sealed class TelemetryRepository : IDisposable
     internal List<OtlpSpanLink> SpanLinks => _spanLinks;
     internal List<Subscription> TracesSubscriptions => _tracesSubscriptions;
 
-    public TelemetryRepository(ILoggerFactory loggerFactory, IOptions<DashboardOptions> dashboardOptions, PauseManager pauseManager, IEnumerable<IOutgoingPeerResolver> outgoingPeerResolvers)
+    public TelemetryRepository(
+        ILoggerFactory loggerFactory, 
+        IOptions<DashboardOptions> dashboardOptions, 
+        PauseManager pauseManager, 
+        IEnumerable<IOutgoingPeerResolver> outgoingPeerResolvers,
+        ITelemetryPersistence? persistence = null)
     {
         _logger = loggerFactory.CreateLogger(typeof(TelemetryRepository));
         _otlpContext = new OtlpContext
@@ -73,6 +79,7 @@ public sealed class TelemetryRepository : IDisposable
         };
         _pauseManager = pauseManager;
         _outgoingPeerResolvers = outgoingPeerResolvers.ToArray();
+        _persistence = persistence;
         _logs = new(_otlpContext.Options.MaxLogCount);
         _traces = new(_otlpContext.Options.MaxTraceCount);
         _traces.ItemRemovedForCapacity += TracesItemRemovedForCapacity;
@@ -147,18 +154,18 @@ public sealed class TelemetryRepository : IDisposable
 
     public List<OtlpResource> GetResources(ResourceKey key, bool includeUninstrumentedPeers = false)
     {
-        if (key.InstanceId == null)
+        if (key.InstanceId is null)
         {
             return GetResourcesByName(key.Name, includeUninstrumentedPeers: includeUninstrumentedPeers);
         }
 
         var resource = GetResource(key);
-        if (resource == null || (resource.UninstrumentedPeer && !includeUninstrumentedPeers))
+        if (resource is null || (resource.UninstrumentedPeer && !includeUninstrumentedPeers))
         {
             return [];
         }
 
-        return [resource];
+        return [resource!];
     }
 
     public Dictionary<ResourceKey, int> GetResourceUnviewedErrorLogsCount()
@@ -334,6 +341,8 @@ public sealed class TelemetryRepository : IDisposable
 
         try
         {
+            var logsTopersist = new List<OtlpLogEntry>();
+
             foreach (var sl in scopeLogs)
             {
                 if (!OtlpHelpers.TryGetOrAddScope(_logScopes, sl.Scope, _otlpContext, TelemetryType.Logs, out var scope))
@@ -382,6 +391,13 @@ public sealed class TelemetryRepository : IDisposable
                         {
                             _logPropertyKeys.Add((resourceView.Resource, kvp.Key));
                         }
+
+                        // Collect logs for persistence
+                        if (_persistence != null)
+                        {
+                            logsTopersist.Add(logEntry);
+                        }
+//
                         context.SuccessCount++;
                     }
                     catch (Exception ex)
@@ -390,6 +406,22 @@ public sealed class TelemetryRepository : IDisposable
                         _otlpContext.Logger.LogInformation(ex, "Error adding log entry.");
                     }
                 }
+            }
+
+            // Persist logs asynchronously (fire and forget)
+            if (_persistence != null && logsTopersist.Count > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _persistence.AddLogsAsync(logsTopersist).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to persist {Count} logs", logsTopersist.Count);
+                    }
+                });
             }
         }
         finally
@@ -400,6 +432,26 @@ public sealed class TelemetryRepository : IDisposable
 
     public PagedResult<OtlpLogEntry> GetLogs(GetLogsContext context)
     {
+        // If persistence is enabled, try to load from it first
+        if (_persistence != null)
+        {
+            try
+            {
+                var persistedLogs = _persistence.GetLogsAsync(context).GetAwaiter().GetResult();
+                
+                // If we got results from persistence, use them
+                if (persistedLogs.TotalItemCount > 0)
+                {
+                    return persistedLogs;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve logs from persistence layer, falling back to in-memory cache");
+            }
+        }
+
+        // Fall back to in-memory logs
         List<OtlpResource>? resources = null;
         if (context.ResourceKey is { } key)
         {
@@ -488,7 +540,7 @@ public sealed class TelemetryRepository : IDisposable
         List<OtlpResource>? resources = null;
         if (resourceKey != null)
         {
-            resources = GetResources(resourceKey.Value, includeUninstrumentedPeers: true);
+            resources = GetResources(resourceKey.Value, true);
         }
 
         _tracesLock.EnterReadLock();
@@ -512,10 +564,30 @@ public sealed class TelemetryRepository : IDisposable
 
     public GetTracesResponse GetTraces(GetTracesRequest context)
     {
+        // If persistence is enabled, try to load from it first
+        if (_persistence != null)
+        {
+            try
+            {
+                var persistedTraces = _persistence.GetTracesAsync(context).GetAwaiter().GetResult();
+                
+                // If we got results from persistence, use them
+                if (persistedTraces.PagedResult.TotalItemCount > 0)
+                {
+                    return persistedTraces;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve traces from persistence layer, falling back to in-memory cache");
+            }
+        }
+
+        // Fall back to in-memory traces
         List<OtlpResource>? resources = null;
         if (context.ResourceKey is { } key)
         {
-            resources = GetResources(key, includeUninstrumentedPeers: true);
+            resources = GetResources(key, true);
 
             if (resources.Count == 0)
             {
@@ -635,7 +707,7 @@ public sealed class TelemetryRepository : IDisposable
         List<OtlpResource>? resources = null;
         if (resourceKey.HasValue)
         {
-            resources = GetResources(resourceKey.Value, includeUninstrumentedPeers: true);
+            resources = GetResources(resourceKey.Value, true);
         }
 
         _tracesLock.EnterWriteLock();
@@ -903,6 +975,23 @@ public sealed class TelemetryRepository : IDisposable
             }
 
             resourceView.Resource.AddMetrics(context, rm.ScopeMetrics);
+            
+            // Persist metrics asynchronously (fire and forget)
+            if (_persistence != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        //TODO: 考虑如何持久化指标
+                        //await _persistence.AddMetricsAsync(resourceView.Resource).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to persist metrics for resource {ResourceName}", resourceView.Resource.ResourceName);
+                    }
+                });
+            }
         }
 
         RaiseSubscriptionChanged(_metricsSubscriptions);
@@ -969,6 +1058,8 @@ public sealed class TelemetryRepository : IDisposable
 
         try
         {
+            var tracesToPersist = new List<OtlpTrace>();
+
             foreach (var scopeSpan in scopeSpans)
             {
                 if (!OtlpHelpers.TryGetOrAddScope(_traceScopes, scopeSpan.Scope, _otlpContext, TelemetryType.Traces, out var scope))
@@ -1099,7 +1190,32 @@ public sealed class TelemetryRepository : IDisposable
                 foreach (var (_, updatedTrace) in updatedTraces)
                 {
                     CalculateTraceUninstrumentedPeers(updatedTrace);
+                    
+                    // Collect traces for persistence
+                    if (_persistence != null && !tracesToPersist.Contains(updatedTrace))
+                    {
+                        tracesToPersist.Add(updatedTrace);
+                    }
                 }
+            }
+
+            // Persist traces asynchronously (fire and forget)
+            if (_persistence != null && tracesToPersist.Count > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach (var trace in tracesToPersist)
+                        {
+                            await _persistence.AddTraceAsync(trace).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to persist {Count} traces", tracesToPersist.Count);
+                    }
+                });
             }
         }
         finally

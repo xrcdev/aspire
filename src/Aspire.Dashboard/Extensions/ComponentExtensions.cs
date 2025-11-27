@@ -38,7 +38,10 @@ internal static class ComponentExtensions
         // Don't trigger on header rows.
         if (row.RowType == DataGridRowType.Default)
         {
-            call(row.Item!);
+            if (row.Item is not null)
+            {
+                call(row.Item!);
+            }
         }
     }
 }

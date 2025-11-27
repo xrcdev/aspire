@@ -321,4 +321,8 @@
     <EmbeddedResource Include="Mcp\Resources\aspire-64.png" />
     <None Include="wwwroot\js\README.md" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
 </Project>

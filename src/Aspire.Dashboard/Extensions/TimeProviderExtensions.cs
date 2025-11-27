@@ -26,10 +26,10 @@ internal static class TimeProviderExtensions
         {
             return dateTime;
         }
-        if (dateTime.Kind == DateTimeKind.Unspecified)
-        {
-            throw new InvalidOperationException("Unable to convert unspecified DateTime to local time.");
-        }
+        //if (dateTime.Kind == DateTimeKind.Unspecified)
+        //{
+        //    throw new InvalidOperationException("Unable to convert unspecified DateTime to local time.");
+        //}
 
         var local = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeProvider.LocalTimeZone);
         local = DateTime.SpecifyKind(local, DateTimeKind.Local);

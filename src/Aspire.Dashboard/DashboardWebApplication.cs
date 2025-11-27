@@ -13,6 +13,7 @@ using Aspire.Dashboard.Authentication.OtlpApiKey;
 using Aspire.Dashboard.Components;
 using Aspire.Dashboard.Components.Pages;
 using Aspire.Dashboard.Configuration;
+using Aspire.Dashboard.Extensions;
 using Aspire.Dashboard.Mcp;
 using Aspire.Dashboard.Model;
 using Aspire.Dashboard.Model.Assistant;
@@ -36,6 +37,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Server.Kestrel;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -280,6 +282,14 @@ public sealed class DashboardWebApplication : IAsyncDisposable
 
         // OTLP services.
         builder.Services.AddGrpc();
+        
+        // Configure telemetry persistence (SQL Server or in-memory)
+        var useSqlServerPersistence = builder.Configuration.GetValue<bool>("SqlServerTelemetry:Enabled");
+        if (useSqlServerPersistence)
+        {
+            builder.Services.AddSqlServerTelemetryPersistence(builder.Configuration);
+        }
+        
         builder.Services.AddSingleton<TelemetryRepository>();
         builder.Services.AddTransient<StructuredLogsViewModel>();
 
@@ -911,15 +921,72 @@ public sealed class DashboardWebApplication : IAsyncDisposable
         {
             return -1;
         }
-
+        // 在启动前初始化数据库
+        InitializeDatabaseAsync(CancellationToken.None).GetAwaiter().GetResult();
         _app.Run();
         return 0;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken = default)
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(_validationFailures.Count == 0, "Validation failures: " + Environment.NewLine + string.Join(Environment.NewLine, _validationFailures));
-        return _app.StartAsync(cancellationToken);
+        
+        // Initialize SQL Server database if enabled
+        await InitializeDatabaseAsync(cancellationToken).ConfigureAwait(false);
+        
+        await _app.StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task InitializeDatabaseAsync(CancellationToken cancellationToken)
+    {
+        var useSqlServerPersistence = _app.Configuration.GetValue<bool>("SqlServerTelemetry:Enabled");
+        if (!useSqlServerPersistence)
+        {
+            return;
+        }
+
+        var logger = _app.Services.GetRequiredService<ILogger<DashboardWebApplication>>();
+        
+        try
+        {
+            var contextFactory = _app.Services.GetService<IDbContextFactory<SqlServerTelemetryDbContext>>();
+            if (contextFactory == null)
+            {
+                logger.LogWarning("SQL Server persistence is enabled but IDbContextFactory<SqlServerTelemetryDbContext> is not registered");
+                return;
+            }
+
+            var dbContext = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+            await using (dbContext.ConfigureAwait(false))
+            {
+                var options = _app.Configuration.GetSection("SqlServerTelemetry").Get<SqlServerTelemetryOptions>() ?? new SqlServerTelemetryOptions();
+
+                if (options.EnsureCreated)
+                {
+                    logger.LogInformation("Creating SQL Server telemetry database if it doesn't exist...");
+                    var created = await dbContext.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+                    if (created)
+                    {
+                        logger.LogInformation("SQL Server telemetry database created successfully");
+                    }
+                    else
+                    {
+                        logger.LogInformation("SQL Server telemetry database already exists");
+                    }
+                }
+                else if (options.AutoMigrate)
+                {
+                    logger.LogInformation("Applying SQL Server telemetry database migrations...");
+                    await dbContext.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                    logger.LogInformation("SQL Server telemetry database migrations applied successfully");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to initialize SQL Server telemetry database");
+            throw;
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken = default)
