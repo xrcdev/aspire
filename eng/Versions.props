@@ -61,6 +61,7 @@
     <MicrosoftEntityFrameworkCoreCosmosPreviewVersion>10.0.0</MicrosoftEntityFrameworkCoreCosmosPreviewVersion>
     <MicrosoftEntityFrameworkCoreDesignPreviewVersion>10.0.0</MicrosoftEntityFrameworkCoreDesignPreviewVersion>
     <MicrosoftEntityFrameworkCoreSqlServerPreviewVersion>10.0.0</MicrosoftEntityFrameworkCoreSqlServerPreviewVersion>
+    <MicrosoftEntityFrameworkCoreSqlitePreviewVersion>10.0.0</MicrosoftEntityFrameworkCoreSqlitePreviewVersion>
     <MicrosoftEntityFrameworkCoreToolsPreviewVersion>10.0.0</MicrosoftEntityFrameworkCoreToolsPreviewVersion>
     <!-- ASP.NET Core -->
     <MicrosoftAspNetCoreAuthenticationCertificatePreviewVersion>10.0.0</MicrosoftAspNetCoreAuthenticationCertificatePreviewVersion>
@@ -94,6 +95,7 @@
     <MicrosoftEntityFrameworkCoreCosmosVersion>9.0.11</MicrosoftEntityFrameworkCoreCosmosVersion>
     <MicrosoftEntityFrameworkCoreDesignVersion>9.0.11</MicrosoftEntityFrameworkCoreDesignVersion>
     <MicrosoftEntityFrameworkCoreSqlServerVersion>9.0.11</MicrosoftEntityFrameworkCoreSqlServerVersion>
+    <MicrosoftEntityFrameworkCoreSqliteVersion>9.0.11</MicrosoftEntityFrameworkCoreSqliteVersion>
     <MicrosoftEntityFrameworkCoreToolsVersion>9.0.11</MicrosoftEntityFrameworkCoreToolsVersion>
     <!-- ASP.NET Core -->
     <MicrosoftAspNetCoreAuthenticationCertificateVersion>9.0.11</MicrosoftAspNetCoreAuthenticationCertificateVersion>
@@ -133,6 +135,7 @@
     <MicrosoftEntityFrameworkCoreCosmosLTSVersion>8.0.22</MicrosoftEntityFrameworkCoreCosmosLTSVersion>
     <MicrosoftEntityFrameworkCoreDesignLTSVersion>8.0.22</MicrosoftEntityFrameworkCoreDesignLTSVersion>
     <MicrosoftEntityFrameworkCoreSqlServerLTSVersion>8.0.22</MicrosoftEntityFrameworkCoreSqlServerLTSVersion>
+    <MicrosoftEntityFrameworkCoreSqliteLTSVersion>8.0.22</MicrosoftEntityFrameworkCoreSqliteLTSVersion>
     <MicrosoftEntityFrameworkCoreToolsLTSVersion>8.0.22</MicrosoftEntityFrameworkCoreToolsLTSVersion>
     <!-- ASP.NET Core -->
     <MicrosoftAspNetCoreAuthenticationCertificateLTSVersion>8.0.22</MicrosoftAspNetCoreAuthenticationCertificateLTSVersion>

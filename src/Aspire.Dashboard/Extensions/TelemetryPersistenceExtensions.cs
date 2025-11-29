@@ -51,7 +51,7 @@ public static class TelemetryPersistenceExtensions
             throw new ArgumentNullException(nameof(connectionString));
         }
 
-        if (configureOptions != null)
+        if (configureOptions is not null)
         {
             services.Configure(configureOptions);
         }
@@ -60,6 +60,59 @@ public static class TelemetryPersistenceExtensions
             options.UseSqlServer(connectionString));
         
         services.AddSingleton<ITelemetryPersistence, SqlServerTelemetryPersistence>();
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SQLite-based telemetry persistence to the service collection
+    /// </summary>
+    public static IServiceCollection AddSqliteTelemetryPersistence(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("SqliteTelemetry") 
+            ?? configuration["SqliteTelemetry:ConnectionString"];
+
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new InvalidOperationException(
+                "SQLite connection string not found. " +
+                "Please configure 'ConnectionStrings:SqliteTelemetry' or 'SqliteTelemetry:ConnectionString' in appsettings.json");
+        }
+
+        services.Configure<SqliteTelemetryOptions>(configuration.GetSection("SqliteTelemetry"));
+        
+        services.AddDbContextFactory<SqliteTelemetryDbContext>(options =>
+            options.UseSqlite(connectionString));
+        
+        services.AddSingleton<ITelemetryPersistence, SqliteTelemetryPersistence>();
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Adds SQLite-based telemetry persistence with custom options
+    /// </summary>
+    public static IServiceCollection AddSqliteTelemetryPersistence(
+        this IServiceCollection services,
+        string connectionString,
+        Action<SqliteTelemetryOptions>? configureOptions = null)
+    {
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new ArgumentNullException(nameof(connectionString));
+        }
+
+        if (configureOptions is not null)
+        {
+            services.Configure(configureOptions);
+        }
+        
+        services.AddDbContextFactory<SqliteTelemetryDbContext>(options =>
+            options.UseSqlite(connectionString));
+        
+        services.AddSingleton<ITelemetryPersistence, SqliteTelemetryPersistence>();
         
         return services;
     }

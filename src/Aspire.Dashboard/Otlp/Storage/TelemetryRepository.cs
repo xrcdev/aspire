@@ -65,9 +65,9 @@ public sealed class TelemetryRepository : IDisposable
     internal List<Subscription> TracesSubscriptions => _tracesSubscriptions;
 
     public TelemetryRepository(
-        ILoggerFactory loggerFactory, 
-        IOptions<DashboardOptions> dashboardOptions, 
-        PauseManager pauseManager, 
+        ILoggerFactory loggerFactory,
+        IOptions<DashboardOptions> dashboardOptions,
+        PauseManager pauseManager,
         IEnumerable<IOutgoingPeerResolver> outgoingPeerResolvers,
         ITelemetryPersistence? persistence = null)
     {
@@ -397,7 +397,7 @@ public sealed class TelemetryRepository : IDisposable
                         {
                             logsTopersist.Add(logEntry);
                         }
-//
+                        //
                         context.SuccessCount++;
                     }
                     catch (Exception ex)
@@ -438,7 +438,7 @@ public sealed class TelemetryRepository : IDisposable
             try
             {
                 var persistedLogs = _persistence.GetLogsAsync(context).GetAwaiter().GetResult();
-                
+
                 // If we got results from persistence, use them
                 if (persistedLogs.TotalItemCount > 0)
                 {
@@ -488,6 +488,26 @@ public sealed class TelemetryRepository : IDisposable
 
     public OtlpLogEntry? GetLog(long logId)
     {
+        // If persistence is enabled, try to load from it first
+        if (_persistence != null)
+        {
+            try
+            {
+                var persistedLog = _persistence.GetLogAsync(logId).GetAwaiter().GetResult();
+
+                // If we got a result from persistence, use it
+                if (persistedLog != null)
+                {
+                    return persistedLog;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve log '{LogId}' from persistence layer, falling back to in-memory cache", logId);
+            }
+        }
+
+        // Fall back to in-memory logs
         _logsLock.EnterReadLock();
 
         try
@@ -570,7 +590,7 @@ public sealed class TelemetryRepository : IDisposable
             try
             {
                 var persistedTraces = _persistence.GetTracesAsync(context).GetAwaiter().GetResult();
-                
+
                 // If we got results from persistence, use them
                 if (persistedTraces.PagedResult.TotalItemCount > 0)
                 {
@@ -882,6 +902,26 @@ public sealed class TelemetryRepository : IDisposable
 
     public OtlpTrace? GetTrace(string traceId)
     {
+        // If persistence is enabled, try to load from it first
+        if (_persistence != null)
+        {
+            try
+            {
+                var persistedTrace = _persistence.GetTraceAsync(traceId).GetAwaiter().GetResult();
+
+                // If we got a result from persistence, use it
+                if (persistedTrace != null)
+                {
+                    return persistedTrace;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve trace '{TraceId}' from persistence layer, falling back to in-memory cache", traceId);
+            }
+        }
+
+        // Fall back to in-memory traces
         _tracesLock.EnterReadLock();
 
         try
@@ -940,6 +980,26 @@ public sealed class TelemetryRepository : IDisposable
 
     public OtlpSpan? GetSpan(string traceId, string spanId)
     {
+        // If persistence is enabled, try to load from it first
+        if (_persistence != null)
+        {
+            try
+            {
+                var persistedSpan = _persistence.GetSpanAsync(traceId, spanId).GetAwaiter().GetResult();
+
+                // If we got a result from persistence, use it
+                if (persistedSpan != null)
+                {
+                    return persistedSpan;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to retrieve span '{SpanId}' from trace '{TraceId}' from persistence layer, falling back to in-memory cache", spanId, traceId);
+            }
+        }
+
+        // Fall back to in-memory traces
         _tracesLock.EnterReadLock();
 
         try
@@ -975,7 +1035,7 @@ public sealed class TelemetryRepository : IDisposable
             }
 
             resourceView.Resource.AddMetrics(context, rm.ScopeMetrics);
-            
+
             // Persist metrics asynchronously (fire and forget)
             if (_persistence != null)
             {
@@ -1190,7 +1250,7 @@ public sealed class TelemetryRepository : IDisposable
                 foreach (var (_, updatedTrace) in updatedTraces)
                 {
                     CalculateTraceUninstrumentedPeers(updatedTrace);
-                    
+
                     // Collect traces for persistence
                     if (_persistence != null && !tracesToPersist.Contains(updatedTrace))
                     {

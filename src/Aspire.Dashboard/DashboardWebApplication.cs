@@ -283,11 +283,16 @@ public sealed class DashboardWebApplication : IAsyncDisposable
         // OTLP services.
         builder.Services.AddGrpc();
         
-        // Configure telemetry persistence (SQL Server or in-memory)
+        // Configure telemetry persistence (SQL Server, SQLite, or in-memory)
         var useSqlServerPersistence = builder.Configuration.GetValue<bool>("SqlServerTelemetry:Enabled");
+        var useSqlitePersistence = builder.Configuration.GetValue<bool>("SqliteTelemetry:Enabled");
         if (useSqlServerPersistence)
         {
             builder.Services.AddSqlServerTelemetryPersistence(builder.Configuration);
+        }
+        else if (useSqlitePersistence)
+        {
+            builder.Services.AddSqliteTelemetryPersistence(builder.Configuration);
         }
         
         builder.Services.AddSingleton<TelemetryRepository>();
@@ -931,7 +936,7 @@ public sealed class DashboardWebApplication : IAsyncDisposable
     {
         Debug.Assert(_validationFailures.Count == 0, "Validation failures: " + Environment.NewLine + string.Join(Environment.NewLine, _validationFailures));
         
-        // Initialize SQL Server database if enabled
+        // Initialize database if enabled (SQL Server or SQLite)
         await InitializeDatabaseAsync(cancellationToken).ConfigureAwait(false);
         
         await _app.StartAsync(cancellationToken).ConfigureAwait(false);
@@ -940,17 +945,26 @@ public sealed class DashboardWebApplication : IAsyncDisposable
     private async Task InitializeDatabaseAsync(CancellationToken cancellationToken)
     {
         var useSqlServerPersistence = _app.Configuration.GetValue<bool>("SqlServerTelemetry:Enabled");
-        if (!useSqlServerPersistence)
+        var useSqlitePersistence = _app.Configuration.GetValue<bool>("SqliteTelemetry:Enabled");
+        
+        if (useSqlServerPersistence)
         {
-            return;
+            await InitializeSqlServerDatabaseAsync(cancellationToken).ConfigureAwait(false);
         }
+        else if (useSqlitePersistence)
+        {
+            await InitializeSqliteDatabaseAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
 
+    private async Task InitializeSqlServerDatabaseAsync(CancellationToken cancellationToken)
+    {
         var logger = _app.Services.GetRequiredService<ILogger<DashboardWebApplication>>();
         
         try
         {
             var contextFactory = _app.Services.GetService<IDbContextFactory<SqlServerTelemetryDbContext>>();
-            if (contextFactory == null)
+            if (contextFactory is null)
             {
                 logger.LogWarning("SQL Server persistence is enabled but IDbContextFactory<SqlServerTelemetryDbContext> is not registered");
                 return;
@@ -985,6 +999,52 @@ public sealed class DashboardWebApplication : IAsyncDisposable
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to initialize SQL Server telemetry database");
+            throw;
+        }
+    }
+
+    private async Task InitializeSqliteDatabaseAsync(CancellationToken cancellationToken)
+    {
+        var logger = _app.Services.GetRequiredService<ILogger<DashboardWebApplication>>();
+        
+        try
+        {
+            var contextFactory = _app.Services.GetService<IDbContextFactory<SqliteTelemetryDbContext>>();
+            if (contextFactory is null)
+            {
+                logger.LogWarning("SQLite persistence is enabled but IDbContextFactory<SqliteTelemetryDbContext> is not registered");
+                return;
+            }
+
+            var dbContext = await contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+            await using (dbContext.ConfigureAwait(false))
+            {
+                var options = _app.Configuration.GetSection("SqliteTelemetry").Get<SqliteTelemetryOptions>() ?? new SqliteTelemetryOptions();
+
+                if (options.EnsureCreated)
+                {
+                    logger.LogInformation("Creating SQLite telemetry database if it doesn't exist...");
+                    var created = await dbContext.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+                    if (created)
+                    {
+                        logger.LogInformation("SQLite telemetry database created successfully");
+                    }
+                    else
+                    {
+                        logger.LogInformation("SQLite telemetry database already exists");
+                    }
+                }
+                else if (options.AutoMigrate)
+                {
+                    logger.LogInformation("Applying SQLite telemetry database migrations...");
+                    await dbContext.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+                    logger.LogInformation("SQLite telemetry database migrations applied successfully");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to initialize SQLite telemetry database");
             throw;
         }
     }
